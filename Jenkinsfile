@@ -110,32 +110,27 @@ pipeline {
         stage('Generate HTML Report') {
             steps {
                 script {
-                    // Generate test report
-                    sh 'mvn surefire-report:report'
+                    def htmlContent = """
+                    <html>
+                    <head><title>Pipeline Execution Report</title></head>
+                    <body>
+                    <h1>Pipeline Build Report</h1>
+                    <h2>Build #${env.BUILD_NUMBER}</h2>
+                    <p><strong>Status:</strong> ${currentBuild.currentResult ?: 'SUCCESS'}</p>
+                    <p><strong>Date:</strong> ${new Date().format("yyyy-MM-dd HH:mm")}</p>
+                    <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <hr>
+                    <h3>Test Results</h3>
+                    <p>Check the detailed test reports in the workspace.</p>
+                    </body>
+                    </html>
+                    """
                     
-                    // Create a simple HTML report
-                    sh '''
-                        cat > pipeline-report.html << EOF
-                        <html>
-                        <head><title>Pipeline Execution Report</title></head>
-                        <body>
-                        <h1>Pipeline Build Report</h1>
-                        <h2>Build #${BUILD_NUMBER}</h2>
-                        <p><strong>Status:</strong> ${currentBuild.result ?: 'SUCCESS'}</p>
-                        <p><strong>Date:</strong> ${new Date().format("yyyy-MM-dd HH:mm")}</p>
-                        <p><strong>Project:</strong> ${env.JOB_NAME}</p>
-                        <hr>
-                        <h3>Test Results</h3>
-                        <p>Check the detailed test reports in the workspace.</p>
-                        </body>
-                        </html>
-                        EOF
-                    '''
+                    writeFile file: 'pipeline-report.html', text: htmlContent
                 }
             }
             post {
                 always {
-                    // Publish HTML report
                     publishHTML([
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
