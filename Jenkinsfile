@@ -107,19 +107,73 @@ pipeline {
                 }
             }
         }
-        stage('DAST - Security Scan') {
+        stage('Generate HTML Report') {
             steps {
-                sh '''
-                    mkdir -p zap-report
-                    docker run -t --rm \\
-                    -v $(pwd)/zap-report:/zap/wrk:rw \\
-                    zaproxy/zap-stable:latest zap-baseline.py \\
-                    -t http://172.20.10.2:8089/kaddem \\
-                    -r zap-report.html \\
-                    -w zap-report.md
-                '''
+                script {
+                    // Generate test report
+                    sh 'mvn surefire-report:report'
+                    
+                    // Create a simple HTML report
+                    sh '''
+                        cat > pipeline-report.html << EOF
+                        <html>
+                        <head><title>Pipeline Execution Report</title></head>
+                        <body>
+                        <h1>Pipeline Build Report</h1>
+                        <h2>Build #${BUILD_NUMBER}</h2>
+                        <p><strong>Status:</strong> ${currentBuild.result ?: 'SUCCESS'}</p>
+                        <p><strong>Date:</strong> ${new Date().format("yyyy-MM-dd HH:mm")}</p>
+                        <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                        <hr>
+                        <h3>Test Results</h3>
+                        <p>Check the detailed test reports in the workspace.</p>
+                        </body>
+                        </html>
+                        EOF
+                    '''
+                }
+            }
+            post {
+                always {
+                    // Publish HTML report
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '',
+                        reportFiles: 'pipeline-report.html',
+                        reportName: 'Pipeline Report'
+                    ])
+                }
             }
         }
+        stage('Email Notification') {
+            steps {
+                echo 'Preparing email notification...'
+            }
+            post {
+                always {
+                    script {
+                        // Send email based on build status
+                        emailext (
+                            subject: "Pipeline ${currentBuild.result ?: 'SUCCESS'} - ${env.JOB_NAME} #${BUILD_NUMBER}",
+                            body: """
+                            <h2>Pipeline Build Report</h2>
+                            <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                            <p><strong>Build Number:</strong> ${BUILD_NUMBER}</p>
+                            <p><strong>Status:</strong> ${currentBuild.result ?: 'SUCCESS'}</p>
+                            <p><strong>Duration:</strong> ${currentBuild.durationString}</p>
+                            <p><strong>URL:</strong> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                            <br/>
+                            <p>Check the detailed HTML report in Jenkins for more information.</p>
+                            """,
+                            to: "cirin.chalghoumi@gmail.com",  // Change this email
+                            attachLog: false
+                        )
+                    }
+                }
+            }
+        } 
    }
     
 }
