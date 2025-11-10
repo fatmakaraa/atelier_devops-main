@@ -42,7 +42,7 @@ pipeline {
         stage('Build Docker Images') 
         {
             steps {
-                sh 'sudo docker compose build'
+                sh ' docker compose build'
             }
         }
          // Étape 6.2 : Authentification à Docker Hub
@@ -55,8 +55,8 @@ pipeline {
                     passwordVariable: 'DOCKER_PASSWORD'
                 )]) {
                     sh '''
-                        sudo docker logout
-                        echo "${DOCKER_PASSWORD}" | sudo docker login -u "${DOCKER_USER}" --password-stdin
+                        docker logout
+                        echo "${DOCKER_PASSWORD}" |  docker login -u "${DOCKER_USER}" --password-stdin
                     '''
                 }
             }
@@ -66,8 +66,8 @@ pipeline {
         {
             steps {
                 sh '''
-                    sudo docker compose push
-                    sudo docker logout
+                     docker compose push
+                     docker logout
                 '''
             }
         }
@@ -75,7 +75,7 @@ pipeline {
         stage('Deploy with Docker Compose') 
         {
             steps {
-                sh 'sudo docker compose down && sudo docker compose up -d'
+                sh ' docker compose down &&  docker compose up -d'
             }
         }
         // Étape 9 : Vérification du déploiement
