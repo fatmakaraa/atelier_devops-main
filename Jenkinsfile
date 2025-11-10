@@ -10,11 +10,23 @@ pipeline {
                     url: 'https://github.com/cyrine67/atelier_devops-main.git'                )
             }
         }
+        stage('Secrets Scan') {
+            steps {
+                sh 'gitleaks detect --source . --verbose --redact'
+                // Cette commande échoue si des secrets sont détectés
+            }
+        }
         // Etape 2 : test unitaire avec Maven
         stage('Tests Unitaires') 
         {
             steps {
                 sh 'mvn test' 
+            }
+        }
+        stage('SCA - Dependency Check') {
+            steps {
+                sh 'mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7'
+                // -DfailBuildOnCVSS=7 échoue pour vulnérabilités critiques/hautes
             }
         }
         // Etape 3 : compilation du code source  
@@ -45,6 +57,7 @@ pipeline {
                 sh ' docker compose build'
             }
         }
+  
          // Étape 6.2 : Authentification à Docker Hub
         stage('Login to Docker Hub') 
         {
@@ -89,6 +102,18 @@ pipeline {
                         sh 'curl -I http://172.20.10.2:8089/kaddem'
                     }
                 }
+            }
+        }
+        stage('DAST - Security Scan') {
+            steps {
+                sh '''
+                    docker run -t --rm \\
+                    -v $(pwd)/zap-report:/zap/reports:rw \\
+                    owasp/zap2docker-stable zap-baseline.py \\
+                    -t http://172.20.10.2:8089/kaddem \\
+                    -r zap-report.html \\
+                    -w zap-report.md
+                '''
             }
         }
    }
