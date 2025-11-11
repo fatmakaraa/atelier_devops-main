@@ -43,7 +43,7 @@ pipeline {
         stage('MVN SONARQUBE') 
         {
             steps {
-                 withSonarQubeEnv('SonarQube') {
+                 withSonarQubeEnv('sq1') {
                     sh '''
                         mvn clean verify sonar:sonar \
                         -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
