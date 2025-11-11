@@ -147,7 +147,7 @@ pipeline {
      // Étape 10 : Send Email
         post {
         success {
-            mail to: 'karaafatma01@gmail.com',
+            mail to: 'fatma.karaa@istic.ucar.tn',
                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} Completed",
                 body: """
                 Build Successfully Completed!
