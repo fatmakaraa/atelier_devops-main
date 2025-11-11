@@ -62,18 +62,20 @@ pipeline {
         }
   
          // Étape 6.2 : Authentification à Docker Hub
-        stage('Login to Docker Hub') 
-        {
+        stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'fatmakaraa',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASSWORD'
-                )]) {
-                    sh '''
-                        docker logout
-                        echo "${DOCKER_PASSWORD}" |  docker login -u "${DOCKER_USER}" --password-stdin
-                    '''
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'fatmakaraa',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh '''
+                            echo "Logging into Docker Hub..."
+                            docker logout || true
+                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                        '''
+                    }
                 }
             }
         }
