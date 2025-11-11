@@ -7,7 +7,7 @@ pipeline {
             steps {
                 git(
                     branch: 'main', 
-                    url: 'https://github.com/cyrine67/atelier_devops-main.git'                )
+                    url: 'https://github.com/fatmakaraa/atelier_devops-main.git'                )
             }
         }
         stage('Secrets Scan') {
@@ -147,7 +147,7 @@ pipeline {
      // Étape 10 : Send Email
         post {
         success {
-            mail to: 'cirin.chalghoumi@gmail.com',
+            mail to: 'karaafatma01@gmail.com',
                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} Completed",
                 body: """
                 Build Successfully Completed!
