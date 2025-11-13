@@ -66,6 +66,19 @@ pipeline {
                 sh ' docker compose build'
             }
         }
+        stage('Trivy Docker Image Scan') {
+            steps {
+                script {
+                    // Définir le nom de l'image
+                    env.DOCKER_IMAGE = "fatmakaraa/kaddem:latest"
+                    
+                    sh """
+                        echo "Scanning Docker image with Trivy..."
+                        trivy image --exit-code 1 --severity HIGH,CRITICAL $DOCKER_IMAGE || true
+                    """
+                }
+            }
+        }
   
          // Étape 6.2 : Authentification à Docker Hub
         stage('Login to Docker Hub') {
