@@ -121,35 +121,38 @@ pipeline {
                     <p><strong>Status:</strong> ${currentBuild.currentResult ?: 'SUCCESS'}</p>
                     <p><strong>Date:</strong> ${new Date().format("yyyy-MM-dd HH:mm")}</p>
                     <p><strong>Project:</strong> ${env.JOB_NAME}</p>
+                    <p><strong>Duration:</strong> ${currentBuild.durationString ?: 'N/A'}</p>
                     <hr>
-                    <h3>Test Results</h3>
-                    <p>Check the detailed test reports in the workspace.</p>
+                    <h3>Build Steps Completed:</h3>
+                    <ul>
+                        <li>✅ Git Checkout</li>
+                        <li>✅ Secrets Scan</li>
+                        <li>✅ Unit Tests</li>
+                        <li>✅ Dependency Check</li>
+                        <li>✅ Compilation</li>
+                        <li>✅ SonarQube Analysis</li>
+                        <li>✅ Docker Build</li>
+                        <li>✅ Docker Push</li>
+                        <li>✅ Deployment</li>
+                    </ul>
                     </body>
                     </html>
                     """
                     
                     writeFile file: 'pipeline-report.html', text: htmlContent
-                }
-            }
-            post {
-                always {
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: '',
-                        reportFiles: 'pipeline-report.html',
-                        reportName: 'Pipeline Report'
-                    ])
+                    
+                    // ✅ ARCHIVE THE FILE - This will make it appear in "Build Artifacts"
+                    archiveArtifacts artifacts: 'pipeline-report.html', allowEmptyArchive: true
+                    
+                    // Also archive test results if available
+                    archiveArtifacts artifacts: '**/target/surefire-reports/*.html', allowEmptyArchive: true
                 }
             }
         }
-
-   }
      // Étape 10 : Send Email
         post {
         success {
-            mail to: 'fatma.karaa@istic.ucar.tn',
+            mail to: 'karaafatma01@gmail.com',
                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} Completed",
                 body: """
                 Build Successfully Completed!
@@ -165,7 +168,7 @@ pipeline {
                 """
         }
         failure {
-            mail to: 'cirin.chalghoumi@gmail.com',
+            mail to: 'karaafatma01@gmail.com',
                 subject: "URGENT: ${env.JOB_NAME} #${env.BUILD_NUMBER} Failed",
                 body: """
                 BUILD FAILURE ALERT!
