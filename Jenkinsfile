@@ -149,6 +149,7 @@ pipeline {
                 }
             }
         }
+    }
      // Étape 10 : Send Email
         post {
         success {
