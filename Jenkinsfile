@@ -13,7 +13,6 @@ pipeline {
                 git(
                     branch: 'main', 
                     url: 'https://github.com/fatmakaraa/atelier_devops-main.git'  
-                    poll: true  // AJOUTEZ 'poll: true' ici aussi
                 )
             }
         }
