@@ -1,5 +1,10 @@
 pipeline {
     agent any
+    // AJOUTEZ JUSTE CECI au début de votre pipeline existant
+    triggers {
+        pollSCM('H/2 * * * *')  // Toutes les 2 minutes
+    }
+
     stages {
         // Etape 1 : pull du code source depuis GitHub
         stage('GIT') 
@@ -7,7 +12,9 @@ pipeline {
             steps {
                 git(
                     branch: 'main', 
-                    url: 'https://github.com/fatmakaraa/atelier_devops-main.git'                )
+                    url: 'https://github.com/fatmakaraa/atelier_devops-main.git'  
+                    poll: true  // AJOUTEZ 'poll: true' ici aussi
+                )
             }
         }
         stage('Secrets Scan') {
