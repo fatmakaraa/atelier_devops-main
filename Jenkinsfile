@@ -44,8 +44,8 @@ pipeline {
             }
         }
         
-        // Etape 3 : Scan RAPIDE du code source avec Trivy (NOUVEAU)
-        stage('Trivy Code Scan') {
+        // Etape 3 : Scan RAPIDE du code source avec Trivy (SEUL SCAN TRIVY)
+        stage('Trivy Security Scan') {
             steps {
                 sh """
                     echo "🔍 Fast Trivy code vulnerability scan..."
@@ -54,27 +54,27 @@ pipeline {
                         --severity HIGH,CRITICAL \
                         --format table \
                         --timeout 1m \
-                        . > trivy-code-report.txt
+                        . > trivy-report.txt
                     
                     # Rapport JSON aussi
                     trivy fs --skip-db-update \
                         --format json \
-                        --output trivy-code-report.json \
+                        --output trivy-report.json \
                         . || echo "JSON report generation completed"
                 """
             }
             post {
                 always {
-                    archiveArtifacts artifacts: 'trivy-code-report.*', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'trivy-report.*', allowEmptyArchive: true
                     sh '''
-                        cat > trivy-code-report.html << EOF
+                        cat > trivy-report.html << EOF
                         <html>
-                        <head><title>Trivy Code Vulnerability Scan</title></head>
+                        <head><title>Trivy Security Scan</title></head>
                         <body>
-                        <h1>Code Security Scan</h1>
-                        <h2>Scan Type: File System (Source Code)</h2>
-                        <pre>$(cat trivy-code-report.txt)</pre>
-                        <p><em>Scanned: Source code files and dependencies</em></p>
+                        <h1>Security Vulnerability Scan</h1>
+                        <h2>Scan Type: Source Code & Dependencies</h2>
+                        <pre>$(cat trivy-report.txt)</pre>
+                        <p><em>Scanned: Source code files, dependencies, and configuration files</em></p>
                         </body>
                         </html>
                         EOF
@@ -84,8 +84,8 @@ pipeline {
                         alwaysLinkToLastBuild: true,
                         keepAll: true,
                         reportDir: '.',
-                        reportFiles: 'trivy-code-report.html',
-                        reportName: 'Trivy Code Security Report'
+                        reportFiles: 'trivy-report.html',
+                        reportName: 'Trivy Security Report'
                     ])
                 }
             }
@@ -171,60 +171,8 @@ pipeline {
                 sh 'docker compose build'
             }
         }
-        
-        // Etape 9 : Scan RAPIDE de l'image Docker (OPTIMISÉ)
-        stage('Trivy Docker Image Scan') {
-            steps {
-                script {
-                    env.DOCKER_IMAGE = "fatmakaraa/kaddem:latest"
-                    sh """
-                        echo "🔍 Fast Docker image security scan..."
-                        # Scan rapide sans télécharger la DB
-                        trivy image --skip-db-update \
-                            --exit-code 0 \
-                            --severity CRITICAL \
-                            --format table \
-                            --timeout 2m \
-                            ${DOCKER_IMAGE} > trivy-image-report.txt
-                        
-                        # Rapport JSON si réussi
-                        if [ \$? -eq 0 ]; then
-                            trivy image --skip-db-update \
-                                --format json \
-                                --output trivy-image-report.json \
-                                ${DOCKER_IMAGE} || echo "JSON report skipped"
-                        fi
-                    """
-                }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: 'trivy-image-report.*', allowEmptyArchive: true
-                    sh '''
-                        cat > trivy-image-report.html << EOF
-                        <html>
-                        <head><title>Trivy Docker Image Scan</title></head>
-                        <body>
-                        <h1>Docker Image Security Scan</h1>
-                        <h2>Image: ${DOCKER_IMAGE}</h2>
-                        <pre>$(cat trivy-image-report.txt)</pre>
-                        </body>
-                        </html>
-                        EOF
-                    '''
-                    publishHTML([
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: 'trivy-image-report.html',
-                        reportName: 'Trivy Docker Image Report'
-                    ])
-                }
-            }
-        }
   
-        // Etape 10 : Authentification Docker Hub
+        // Etape 9 : Authentification Docker Hub
         stage('Login to Docker Hub') {
             steps {
                 script {
@@ -243,7 +191,7 @@ pipeline {
             }
         }
         
-        // Etape 11 : Push image Docker
+        // Etape 10 : Push image Docker
         stage('Push Docker Image') {
             steps {
                 sh '''
@@ -253,14 +201,14 @@ pipeline {
             }
         }
         
-        // Etape 12 : Déploiement
+        // Etape 11 : Déploiement
         stage('Deploy with Docker Compose') {
             steps {
                 sh 'docker compose down && docker compose up -d'
             }
         }
         
-        // Etape 13 : Génération du rapport final
+        // Etape 12 : Génération du rapport final
         stage('Generate Comprehensive Reports') {
             steps {
                 script {
@@ -292,18 +240,16 @@ pipeline {
                         <div class="section">
                             <h3>📊 Security & Quality Reports</h3>
                             <div class="report-link"><a href="${env.BUILD_URL}/Gitleaks_20Secrets_20Report/" target="_blank">🔐 Gitleaks Secrets Report</a></div>
-                            <div class="report-link"><a href="${env.BUILD_URL}/Trivy_20Code_20Security_20Report/" target="_blank">📁 Trivy Code Security Report</a></div>
+                            <div class="report-link"><a href="${env.BUILD_URL}/Trivy_20Security_20Report/" target="_blank">🔍 Trivy Security Report</a></div>
                             <div class="report-link"><a href="${env.BUILD_URL}/Unit_20Tests_20Report/" target="_blank">🧪 Unit Tests Report</a></div>
                             <div class="report-link"><a href="${env.BUILD_URL}/Dependency_20Check_20Report/" target="_blank">📦 Dependency Check Report</a></div>
-                            <div class="report-link"><a href="${env.BUILD_URL}/Trivy_20Docker_20Image_20Report/" target="_blank">🐳 Trivy Docker Image Report</a></div>
                             <div class="report-link"><a href="${env.SONAR_URL ?: '#'}" target="_blank">📈 SonarQube Quality Report</a></div>
                         </div>
                         
                         <div class="section success">
                             <h3>✅ Build Artifacts</h3>
                             <div class="report-link"><a href="${env.BUILD_URL}/artifact/gitleaks-report.json" target="_blank">Gitleaks JSON Report</a></div>
-                            <div class="report-link"><a href="${env.BUILD_URL}/artifact/trivy-code-report.json" target="_blank">Trivy Code JSON Report</a></div>
-                            <div class="report-link"><a href="${env.BUILD_URL}/artifact/trivy-image-report.json" target="_blank">Trivy Image JSON Report</a></div>
+                            <div class="report-link"><a href="${env.BUILD_URL}/artifact/trivy-report.json" target="_blank">Trivy JSON Report</a></div>
                             <div class="report-link"><a href="${env.BUILD_URL}/artifact/" target="_blank">All Artifacts</a></div>
                         </div>
                         
@@ -320,7 +266,7 @@ pipeline {
                     writeFile file: 'comprehensive-report.html', text: htmlContent
                     
                     // Archiver tous les rapports
-                    archiveArtifacts artifacts: '**/target/*.json,**/target/*.html,gitleaks-report.*,trivy-*-report.*,comprehensive-report.html', allowEmptyArchive: true
+                    archiveArtifacts artifacts: '**/target/*.json,**/target/*.html,gitleaks-report.*,trivy-report.*,comprehensive-report.html', allowEmptyArchive: true
                     
                     // Publier le rapport principal
                     publishHTML([
@@ -350,10 +296,9 @@ pipeline {
                 
                 Reports Available:
                 - Secrets Scan: ${env.BUILD_URL}/Gitleaks_20Secrets_20Report/
-                - Code Security: ${env.BUILD_URL}/Trivy_20Code_20Security_20Report/
+                - Security Scan: ${env.BUILD_URL}/Trivy_20Security_20Report/
                 - Unit Tests: ${env.BUILD_URL}/Unit_20Tests_20Report/
                 - Dependency Check: ${env.BUILD_URL}/Dependency_20Check_20Report/
-                - Docker Security: ${env.BUILD_URL}/Trivy_20Docker_20Image_20Report/
                 - Comprehensive Report: ${env.BUILD_URL}/Pipeline_20Comprehensive_20Report/
                 - SonarQube: ${env.SONAR_URL ?: 'Not available'}
                 
@@ -377,10 +322,9 @@ pipeline {
                 📊 Detailed Reports Available:
                 - Full Report: ${env.BUILD_URL}/Pipeline_20Comprehensive_20Report/
                 - Secrets Scan: ${env.BUILD_URL}/Gitleaks_20Secrets_20Report/
-                - Code Security: ${env.BUILD_URL}/Trivy_20Code_20Security_20Report/
+                - Security Scan: ${env.BUILD_URL}/Trivy_20Security_20Report/
                 - Test Results: ${env.BUILD_URL}/Unit_20Tests_20Report/
                 - Dependency Check: ${env.BUILD_URL}/Dependency_20Check_20Report/
-                - Docker Scan: ${env.BUILD_URL}/Trivy_20Docker_20Image_20Report/
                 - SonarQube: ${env.SONAR_URL ?: 'N/A'}
                 
                 Console: ${env.BUILD_URL}console
